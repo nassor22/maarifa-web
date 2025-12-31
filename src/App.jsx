@@ -10,6 +10,9 @@ import Questions from './components/Questions'
 import Jobs from './components/Jobs'
 import Experts from './components/Experts'
 import Messages from './components/Messages'
+import Settings from './components/Settings'
+import Notifications from './components/Notifications'
+import Profile from './components/Profile'
 
 function App() {
   return (
@@ -26,6 +29,9 @@ function App() {
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/experts" element={<Experts />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
   )

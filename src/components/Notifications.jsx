@@ -11,13 +11,12 @@ import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
-  CheckBadgeIcon,
   MoonIcon,
   SunIcon
 } from '@heroicons/react/24/outline'
 import { useTheme } from '../contexts/ThemeContext'
 
-function Experts() {
+function Notifications() {
   const navigate = useNavigate()
   const { darkMode, toggleDarkMode } = useTheme()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -27,35 +26,36 @@ function Experts() {
     reputation: 245
   })
 
-  const experts = [
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
-      name: 'Dr. Amina Kamau',
-      specialty: 'Healthcare & Medicine',
-      expertise: ['Diabetes', 'Cardiology', 'Public Health'],
-      reputation: 1254,
-      answers: 342,
-      verified: true
+      type: 'reply',
+      message: 'Dr. Amina Kamau replied to your question',
+      time: '2 hours ago',
+      read: false
     },
     {
       id: 2,
-      name: 'Prof. James Omondi',
-      specialty: 'Agriculture & Environment',
-      expertise: ['Climate-Smart Agriculture', 'Soil Science', 'Sustainability'],
-      reputation: 2145,
-      answers: 567,
-      verified: true
+      type: 'upvote',
+      message: 'Your post received 10 upvotes',
+      time: '5 hours ago',
+      read: false
     },
     {
       id: 3,
-      name: 'Mary Wanjiru',
-      specialty: 'Finance & Business',
-      expertise: ['Accounting', 'Business Strategy', 'Fintech'],
-      reputation: 987,
-      answers: 234,
-      verified: true
+      type: 'message',
+      message: 'New message from Prof. James Omondi',
+      time: '1 day ago',
+      read: true
     }
-  ]
+  ])
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(notification => ({
+      ...notification,
+      read: true
+    })))
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -79,10 +79,10 @@ function Experts() {
               >
                 {darkMode ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
               </button>
-              <button className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+              <Link to="/notifications" className="p-2 text-primary-600 bg-primary-50 rounded-lg relative">
                 <BellIcon className="h-6 w-6" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              </Link>
               <Link to="/settings" className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                 <Cog6ToothIcon className="h-6 w-6" />
               </Link>
@@ -149,10 +149,10 @@ function Experts() {
               <Link
                 to="/experts"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center space-x-3 px-3 py-3 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+                className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <UserGroupIcon className="h-5 w-5" />
-                <span className="font-medium">Find Experts</span>
+                <span>Find Experts</span>
               </Link>
               
               <Link
@@ -181,60 +181,49 @@ function Experts() {
         </>
       )}
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Find Experts</h2>
-          <Link
-            to="/verify"
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h2>
+          <button 
+            onClick={markAllAsRead}
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
-            Become an Expert
-          </Link>
+            Mark all as read
+          </button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {experts.map((expert) => (
-            <div key={expert.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {expert.name.charAt(0)}
+        <div className="space-y-3">
+          {notifications.map((notification) => (
+            <div 
+              key={notification.id}
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-4 hover:shadow-md transition-shadow ${
+                !notification.read ? 'border-l-4 border-l-primary-600' : ''
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className={`text-gray-900 dark:text-white ${!notification.read ? 'font-semibold' : ''}`}>
+                    {notification.message}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
                 </div>
-                {expert.verified && (
-                  <CheckBadgeIcon className="h-6 w-6 text-blue-500" />
+                {!notification.read && (
+                  <span className="ml-4 w-2 h-2 bg-primary-600 rounded-full"></span>
                 )}
               </div>
-              
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{expert.name}</h3>
-              <p className="text-primary-600 text-sm font-medium mt-1">{expert.specialty}</p>
-              
-              <div className="mt-4 flex flex-wrap gap-2">
-                {expert.expertise.map((skill, index) => (
-                  <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-              
-              <div className="mt-4 pt-4 border-t dark:border-gray-700 flex justify-between text-sm">
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Reputation</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">⭐ {expert.reputation}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Answers</span>
-                  <p className="font-semibold text-gray-900 dark:text-white">{expert.answers}</p>
-                </div>
-              </div>
-              
-              <button className="mt-4 w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium">
-                Contact Expert
-              </button>
             </div>
           ))}
         </div>
+
+        {notifications.length === 0 && (
+          <div className="text-center py-12">
+            <BellIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No notifications yet</p>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-export default Experts
+export default Notifications
