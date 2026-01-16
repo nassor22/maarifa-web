@@ -13,7 +13,10 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
   MoonIcon,
-  SunIcon
+  SunIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  RectangleStackIcon
 } from '@heroicons/react/24/outline'
 import {
   HeartIcon,
@@ -34,6 +37,7 @@ function Dashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false)
   const [user] = useState({
     username: 'johndoe',
     email: 'john@example.com',
@@ -133,7 +137,7 @@ function Dashboard() {
                 onClick={() => setIsSearchModalOpen(true)}
                 type="button"
                 className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer select-none"
-                aria-label="Search categories"
+                aria-label="Search posts"
               >
                 <MagnifyingGlassIcon className="h-6 w-6 pointer-events-none" />
               </button>
@@ -197,8 +201,8 @@ function Dashboard() {
           ></div>
           
           {/* Menu Panel */}
-          <div className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl z-[60] transform transition-transform duration-300 ease-in-out">
-            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+          <div className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl z-[60] transform transition-transform duration-300 ease-in-out overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h2 className="text-xl font-bold text-primary-700 dark:text-primary-400">Menu</h2>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -254,6 +258,46 @@ function Dashboard() {
                 <span>Messages</span>
               </Link>
               
+              <Link
+                to="/freelance"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <RectangleStackIcon className="h-5 w-5" />
+                <span>Freelance</span>
+              </Link>
+
+              {/* Categories Section */}
+              <div className="pt-4 mt-4 border-t dark:border-gray-700">
+                <button
+                  onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <span className="text-sm font-semibold uppercase tracking-wider">Categories</span>
+                  {isCategoriesExpanded ? (
+                    <ChevronUpIcon className="h-4 w-4" />
+                  ) : (
+                    <ChevronDownIcon className="h-4 w-4" />
+                  )}
+                </button>
+                {isCategoriesExpanded && (
+                  <div className="mt-2 space-y-1">
+                    {categories.map((category) => (
+                      <Link
+                        key={category.name}
+                        to={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                      >
+                        <category.icon className={`h-4 w-4 ${category.color}`} />
+                        <span className="text-sm flex-1">{category.name}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{category.posts}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               <div className="pt-4 mt-4 border-t dark:border-gray-700">
                 <button
                   onClick={() => {
@@ -271,7 +315,7 @@ function Dashboard() {
         </>
       )}
 
-      {/* Search/Category Modal */}
+      {/* Search Modal */}
       {isSearchModalOpen && (
         <>
           <div 
@@ -283,7 +327,7 @@ function Dashboard() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto transform transition-all">
               <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 rounded-t-2xl">
                 <div className="p-6 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Search & Browse</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Search Posts</h2>
                   <button
                     onClick={() => setIsSearchModalOpen(false)}
                     className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -296,7 +340,7 @@ function Dashboard() {
                     <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
-                      placeholder="Search categories..."
+                      placeholder="Search for keywords in posts..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -307,28 +351,56 @@ function Dashboard() {
               </div>
               
               <div className="p-6">
-                {categories.filter(category => 
-                  category.name.toLowerCase().includes(searchQuery.toLowerCase())
+                {searchQuery.trim() === '' ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 dark:text-gray-400 text-lg">Enter a keyword to search posts</p>
+                  </div>
+                ) : recentPosts.filter(post => 
+                  post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  post.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  post.author.toLowerCase().includes(searchQuery.toLowerCase())
                 ).length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-500 dark:text-gray-400 text-lg">No categories found matching "{searchQuery}"</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-lg">No posts found matching "{searchQuery}"</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {categories
-                      .filter(category => 
-                        category.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  <div className="space-y-4">
+                    {recentPosts
+                      .filter(post => 
+                        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        post.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        post.author.toLowerCase().includes(searchQuery.toLowerCase())
                       )
-                      .map((category) => (
+                      .map((post) => (
                       <Link
-                        key={category.name}
-                        to={`/category/${category.name.toLowerCase().replace(/\\s+/g, '-')}`}
+                        key={post.id}
+                        to={`/post/${post.id}`}
                         onClick={() => setIsSearchModalOpen(false)}
-                        className="flex flex-col items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 hover:shadow-md transition-all dark:hover:bg-gray-700"
+                        className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 hover:shadow-md transition-all dark:bg-gray-700/50"
                       >
-                        <category.icon className={`h-8 w-8 ${category.color} mb-2`} />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white text-center">{category.name}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{category.posts} posts</span>
+                        <div className="flex items-start justify-between mb-2">
+                          <span className={`text-xs font-medium px-2 py-1 rounded ${getPostTypeColor(post.type)}`}>
+                            {post.type.toUpperCase()}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{post.time}</span>
+                        </div>
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">{post.title}</h3>
+                        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+                          <div className="flex items-center space-x-4">
+                            <span className="flex items-center">
+                              <span className="font-medium">
+                                {post.author}
+                                {post.isExpert && <span className="ml-1 text-amber-500">⭐</span>}
+                              </span>
+                            </span>
+                            <span className="text-gray-400 dark:text-gray-500">•</span>
+                            <span>{post.category}</span>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <span>↑ {post.upvotes}</span>
+                            <span>💬 {post.replies}</span>
+                          </div>
+                        </div>
                       </Link>
                     ))}
                   </div>

@@ -24,11 +24,54 @@ To solve the widespread problem of misinformation and unverified "experts" on so
 ### Prerequisites
 
 - Node.js 18+ and npm
+- MongoDB (local or MongoDB Atlas)
 - Modern web browser
 
-### Installation
+### Development Setup
 
 ```bash
+# Clone the repository
+git clone <your-repo-url>
+cd maarifaHub
+
+# Install dependencies
+npm install
+cd server && npm install && cd ..
+
+# Configure environment
+cp .env.example .env
+cp server/.env.example server/.env
+# Edit .env files with your settings
+
+# Start development servers
+npm run dev          # Frontend (port 5173)
+cd server && npm run dev  # Backend (port 5000)
+```
+
+### 🌐 Production Deployment
+
+**This app is production-ready!** See [PRODUCTION_READY.md](PRODUCTION_READY.md) for overview.
+
+#### Quick Deploy with Docker
+
+```bash
+# Configure environment
+cp .env.docker.example .env.docker
+# Edit .env.docker
+
+# Deploy
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+#### Or use the automated script
+
+```bash
+./deploy.sh
+```
+
+📖 **Full deployment guide:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+
+### Installationbash
 # Clone the repository
 git clone https://github.com/yourusername/maarifahub.git
 

@@ -15,6 +15,7 @@ import Messages from './components/Messages'
 import Settings from './components/Settings'
 import Notifications from './components/Notifications'
 import Profile from './components/Profile'
+import Freelance from './components/Freelance'
 
 function App() {
   const [isLoading, setIsLoading] = useState(true)
@@ -54,6 +55,7 @@ function App() {
         <Route path="/questions" element={<Questions />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/experts" element={<Experts />} />
+        <Route path="/freelance" element={<Freelance />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/notifications" element={<Notifications />} />

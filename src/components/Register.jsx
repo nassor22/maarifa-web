@@ -6,6 +6,7 @@ function Register() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    countryCode: '+254',
     phone: '',
     password: '',
     confirmPassword: '',
@@ -18,6 +19,29 @@ function Register() {
     { value: 'community_member', label: 'Community Member', description: 'Ask questions and share knowledge' },
     { value: 'verified_expert_individual', label: 'Expert (Individual)', description: 'Provide professional guidance' },
     { value: 'verified_expert_org', label: 'Expert (Organization)', description: 'Represent an organization' }
+  ]
+
+  const countryCodes = [
+    { code: '+1', country: 'USA/Canada', flag: '🇺🇸' },
+    { code: '+44', country: 'UK', flag: '🇬🇧' },
+    { code: '+91', country: 'India', flag: '🇮🇳' },
+    { code: '+254', country: 'Kenya', flag: '🇰🇪' },
+    { code: '+255', country: 'Tanzania', flag: '🇹🇿' },
+    { code: '+256', country: 'Uganda', flag: '🇺🇬' },
+    { code: '+250', country: 'Rwanda', flag: '🇷🇼' },
+    { code: '+251', country: 'Ethiopia', flag: '🇪🇹' },
+    { code: '+27', country: 'South Africa', flag: '🇿🇦' },
+    { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+    { code: '+233', country: 'Ghana', flag: '🇬🇭' },
+    { code: '+20', country: 'Egypt', flag: '🇪🇬' },
+    { code: '+212', country: 'Morocco', flag: '🇲🇦' },
+    { code: '+213', country: 'Algeria', flag: '🇩🇿' },
+    { code: '+216', country: 'Tunisia', flag: '🇹🇳' },
+    { code: '+49', country: 'Germany', flag: '🇩🇪' },
+    { code: '+33', country: 'France', flag: '🇫🇷' },
+    { code: '+86', country: 'China', flag: '🇨🇳' },
+    { code: '+81', country: 'Japan', flag: '🇯🇵' },
+    { code: '+61', country: 'Australia', flag: '🇦🇺' }
   ]
 
   const handleChange = (e) => {
@@ -136,15 +160,29 @@ function Register() {
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number (Optional)
               </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+254 XXX XXX XXX"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-              />
+              <div className="flex gap-2">
+                <select
+                  name="countryCode"
+                  value={formData.countryCode}
+                  onChange={handleChange}
+                  className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all bg-white"
+                >
+                  {countryCodes.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.flag} {country.code}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="XXX XXX XXX"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
             </div>
 
             {/* Role Selection */}
