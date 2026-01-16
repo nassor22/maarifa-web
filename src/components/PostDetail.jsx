@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { 
   ArrowLeftIcon, 
   ChatBubbleLeftIcon,
@@ -16,9 +16,11 @@ import { useTheme } from '../contexts/ThemeContext'
 
 function PostDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { darkMode, toggleDarkMode } = useTheme()
   const [commentContent, setCommentContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isAuthenticated = useMemo(() => Boolean(localStorage.getItem('token')), [])
 
   // Mock database of posts
   const allPosts = {
@@ -134,6 +136,13 @@ These regulations aim to balance innovation with consumer protection in Kenya's 
 
   // Get the specific post or use a default
   const post = allPosts[id] || allPosts[1]
+
+  const previewContent = useMemo(() => {
+    if (isAuthenticated) return post.content
+    const maxChars = 420
+    if (post.content.length <= maxChars) return post.content
+    return post.content.slice(0, maxChars).trimEnd() + '...'
+  }, [isAuthenticated, post.content])
 
   const commentsData = {
     1: [
@@ -268,83 +277,103 @@ These regulations aim to balance innovation with consumer protection in Kenya's 
     ]
   }
 
-  const comments = commentsData[id] || []
+            {/* Comments Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                {post.commentCount} {post.commentCount === 1 ? 'Answer' : 'Answers'}
+              </h2>
 
-  const handleVote = (value) => {
-    console.log('Vote:', value)
-    // TODO: Implement voting API call
-  }
+              {isAuthenticated ? (
+                <div className="space-y-6">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className={`border-l-4 pl-4 ${comment.isAcceptedAnswer ? 'border-green-500 bg-green-50 dark:bg-green-900/20 p-4 rounded-r-lg' : 'border-gray-200 dark:border-gray-700'}`}>
+                      {comment.isAcceptedAnswer && (
+                        <div className="text-green-700 dark:text-green-400 font-semibold text-sm mb-2">
+                          ✓ Accepted Answer
+                        </div>
+                      )}
+                      
+                      {/* Comment Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <Link 
+                          to={`/user/${comment.author.id}`}
+                          className="flex items-center gap-3 group"
+                        >
+                          <div className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-800 dark:text-white font-semibold">
+                            {comment.author.username[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900 dark:text-white">{comment.author.username}</span>
+                              {comment.author.isVerified && (
+                                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Verified Expert</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Reputation {comment.author.reputation}</span>
+                          </div>
+                        </Link>
 
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    
-    // TODO: Implement comment submission API call
-    console.log('New comment:', commentContent)
-    
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setCommentContent('')
-      alert('Comment posted!')
-    }, 1000)
-  }
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                          <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <ArrowUpIcon className="h-5 w-5" />
+                          </button>
+                          <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <ArrowDownIcon className="h-5 w-5" />
+                          </button>
+                          <span className="text-sm text-gray-600 dark:text-gray-300">{comment.upvotes - comment.downvotes}</span>
+                        </div>
+                      </div>
 
-  const getPostTypeColor = (type) => {
-    const colors = {
-      question: 'bg-green-100 text-green-800 border-green-200',
-      information: 'bg-purple-100 text-purple-800 border-purple-200',
-      opinion: 'bg-blue-100 text-blue-800 border-blue-200',
-      knowledge: 'bg-amber-100 text-amber-800 border-amber-200'
-    }
-    return colors[type] || 'bg-gray-100 text-gray-800'
-  }
+                      {/* Comment Content */}
+                      <p className="text-gray-800 dark:text-gray-200 mb-3 whitespace-pre-line">
+                        {comment.content}
+                      </p>
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Top Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/dashboard" className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              <span>Back to Dashboard</span>
-            </Link>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={toggleDarkMode}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all active:scale-95"
-              >
-                {darkMode ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
-              </button>
-              <Link to="/dashboard" className="text-2xl font-bold text-primary-700 dark:text-primary-400">
-                MaarifaHub
-              </Link>
+                      {/* Replies */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="mt-4 space-y-3 pl-4 border-l border-gray-200 dark:border-gray-700">
+                          {comment.replies.map((reply) => (
+                            <div key={reply.id} className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-800 dark:text-white font-semibold">
+                                {reply.author.username[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-900 dark:text-white">{reply.author.username}</span>
+                                  {reply.author.isVerified && (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Verified Expert</span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{reply.content}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Sign in to view full discussion</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Comments and expert replies unlock after you sign in.</p>
+                  <div className="flex gap-3 flex-wrap justify-center">
+                    <button
+                      onClick={() => navigate('/login', { state: { redirectTo: `/post/${post.id}` } })}
+                      className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-semibold"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => navigate('/register', { state: { redirectTo: `/post/${post.id}` } })}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-semibold dark:bg-gray-700 dark:text-white"
+                    >
+                      Create Account
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Voting Sidebar */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sticky top-4">
-              <div className="flex flex-col items-center space-y-2">
-                <button
-                  onClick={() => handleVote(1)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    post.userVote === 1 
-                      ? 'bg-primary-600 text-white' 
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  <ArrowUpIcon className="h-6 w-6" />
-                </button>
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {post.upvotes - post.downvotes}
-                </span>
-                <button
-                  onClick={() => handleVote(-1)}
                   className={`p-2 rounded-lg transition-colors ${
                     post.userVote === -1 
                       ? 'bg-red-600 text-white' 
@@ -411,7 +440,26 @@ These regulations aim to balance innovation with consumer protection in Kenya's 
 
               {/* Content */}
               <div className="prose max-w-none mb-4">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{post.content}</p>
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{isAuthenticated ? post.content : previewContent}</p>
+                {!isAuthenticated && (
+                  <div className="mt-4 p-4 rounded-lg border border-primary-100 bg-primary-50 text-primary-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+                    <p className="font-semibold mb-2">Sign in to read the full post and expert replies</p>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      <button
+                        onClick={() => navigate('/login', { state: { redirectTo: `/post/${post.id}` } })}
+                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-semibold"
+                      >
+                        Sign In
+                      </button>
+                      <button
+                        onClick={() => navigate('/register', { state: { redirectTo: `/post/${post.id}` } })}
+                        className="px-4 py-2 border border-primary-200 bg-white text-primary-700 rounded-lg font-semibold dark:bg-gray-900 dark:text-white dark:border-gray-700"
+                      >
+                        Create Account
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Tags */}

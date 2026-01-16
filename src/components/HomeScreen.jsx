@@ -6,22 +6,67 @@ function HomeScreen() {
   const [usernameOrEmail, setUsernameOrEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const usernameInputRef = useRef(null)
   const passwordInputRef = useRef(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+
+    // Basic client-side validation
+    if (!usernameOrEmail || usernameOrEmail.trim() === '') {
+      setError('Username or email is required')
+      usernameInputRef.current?.focus()
+      return
+    }
+    if (!password || password.trim() === '') {
+      setError('Password is required')
+      passwordInputRef.current?.focus()
+      return
+    }
+
     setIsLoading(true)
-    
-    // TODO: Implement actual sign-in logic
-    console.log('Sign in attempt:', { usernameOrEmail, password })
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ usernameOrEmail, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.errors && Array.isArray(data.errors)) {
+          setError(data.errors[0].msg || 'Login failed')
+        } else {
+          setError(data.error || 'Login failed')
+        }
+        setIsLoading(false)
+        return
+      }
+
+      if (!data.token) {
+        setError('Login failed: No authentication token received')
+        setIsLoading(false)
+        return
+      }
+
+      // Store auth data
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+
       setIsLoading(false)
-      // Redirect to dashboard after successful sign-in
       navigate('/dashboard')
-    }, 1000)
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Failed to connect to server. Please try again.')
+      setIsLoading(false)
+    }
   }
 
   const isValidInput = (input) => {
@@ -48,6 +93,12 @@ function HomeScreen() {
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Sign In
           </h2>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Username/Email Input */}

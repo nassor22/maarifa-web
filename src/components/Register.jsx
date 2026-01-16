@@ -53,22 +53,72 @@ function Register() {
   }
 
   const validateForm = () => {
-    if (formData.username.length < 3) {
+    // Username validation
+    if (!formData.username || formData.username.length < 3) {
       setError('Username must be at least 3 characters')
+      return false
+    }
+    if (formData.username.length > 30) {
+      setError('Username must not exceed 30 characters')
+      return false
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+      setError('Username can only contain letters, numbers, underscores, and hyphens')
+      return false
+    }
+
+    // Email validation
+    if (!formData.email) {
+      setError('Email is required')
       return false
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       setError('Please enter a valid email address')
       return false
     }
+
+    // Password validation
+    if (!formData.password) {
+      setError('Password is required')
+      return false
+    }
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters')
+      return false
+    }
+    if (formData.password.length > 128) {
+      setError('Password must not exceed 128 characters')
+      return false
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      setError('Password must contain at least one lowercase letter')
+      return false
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('Password must contain at least one uppercase letter')
+      return false
+    }
+    if (!/\d/.test(formData.password)) {
+      setError('Password must contain at least one number')
+      return false
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      setError('Please confirm your password')
       return false
     }
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
       return false
     }
+
+    // Phone validation (optional)
+    if (formData.phone && !/^\+?[1-9]\d{1,14}$/.test(formData.phone.replace(/\s/g, ''))) {
+      setError('Invalid phone number format')
+      return false
+    }
+
     return true
   }
 
@@ -82,15 +132,47 @@ function Register() {
     setIsLoading(true)
     setError('')
     
-    // TODO: Implement actual registration API call
-    console.log('Registration attempt:', formData)
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          countryCode: formData.countryCode,
+          phone: formData.phone || null,
+          role: formData.role
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.errors && Array.isArray(data.errors)) {
+          setError(data.errors[0].msg || 'Registration failed')
+        } else {
+          setError(data.error || 'Registration failed')
+        }
+        setIsLoading(false)
+        return
+      }
+
+      // Store token
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      
       setIsLoading(false)
-      alert('Registration successful! You can now sign in.')
-      navigate('/')
-    }, 1500)
+      navigate('/dashboard')
+    } catch (err) {
+      console.error('Registration error:', err)
+      setError('Failed to connect to server. Please try again.')
+      setIsLoading(false)
+    }
   }
 
   return (
