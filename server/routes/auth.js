@@ -259,31 +259,6 @@ router.post('/login',
   }
 );
 
-      // Create JWT token
-      const token = jwt.sign(
-        { userId: user._id },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      res.json({
-        token,
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          reputation: user.reputation,
-          isVerified: user.isVerified
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
-
 // Get current user
 router.get('/me', authenticate, async (req, res) => {
   try {
