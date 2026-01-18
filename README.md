@@ -181,18 +181,21 @@ maarifahub/
 
 ## 📖 Documentation
 
-### Development
+### Deployment (Choose Your Path)
+- **[Netlify Deployment](./NETLIFY_DEPLOYMENT.md)** - ✅ **Frontend deployed on Netlify** with setup guide
+- **[Netlify Setup Checklist](./NETLIFY_CHECKLIST.md)** - Complete your Netlify + Backend setup
+- **[Deployment Comparison](./DEPLOYMENT_COMPARISON.md)** - Compare Netlify vs Vercel & backend options
+- **[Vercel Quick Start](./VERCEL_QUICK_START.md)** - Alternative: Deploy to Vercel in 5 minutes
+- **[Vercel Deployment Guide](./VERCEL_DEPLOYMENT.md)** - Complete Vercel setup documentation
+- **[Docker Deployment](./DEPLOYMENT.md)** - Traditional server deployment
+- **[Production Checklist](./PRODUCTION_READY.md)** - Pre-launch verification
+- **[Domain Configuration](./DOMAIN_CONFIGURATION.md)** - maarifahub.social setup
+
+### Project Information
 - [System Architecture](./ARCHITECTURE.md)
 - [Database Schema](./DATABASE_SCHEMA.md)
 - [API Documentation](./API_DOCUMENTATION.md)
 - [Project Requirements](./instructions.md)
-
-### Deployment
-- [Vercel Deployment Quick Start](./VERCEL_QUICK_START.md) - **Deploy in 5 minutes**
-- [Vercel Deployment Guide](./VERCEL_DEPLOYMENT.md) - Complete Vercel setup guide
-- [Docker Deployment](./DEPLOYMENT.md) - Traditional server deployment
-- [Production Checklist](./PRODUCTION_READY.md) - Pre-launch verification
-- [Domain Configuration](./DOMAIN_CONFIGURATION.md) - maarifahub.social setup
 
 ## 🛠️ Development
 
