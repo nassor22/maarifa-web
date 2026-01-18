@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Build outputs
+dist
+build
+
+# Logs
+logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation
+*.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+docker-compose.prod.yml
+
+# Server directory (backend) - if deploying frontend only
+server/
+
+# Mobile/native files
+android/
+ios/
+capacitor.config.json
+
+# Git
+.git
+.gitignore
+
+# Testing
+coverage
+.nyc_output
+
+# Temporary files
+tmp/
+temp/
