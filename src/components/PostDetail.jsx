@@ -277,6 +277,15 @@ These regulations aim to balance innovation with consumer protection in Kenya's 
     ]
   }
 
+  // Get comments for this post
+  const comments = commentsData[id] || []
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1 order-2 lg:order-1 space-y-6">
             {/* Comments Section */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -374,6 +383,21 @@ These regulations aim to balance innovation with consumer protection in Kenya's 
                 </div>
               )}
             </div>
+            
+            {/* Vote and Action Buttons */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  className={`p-2 rounded-lg transition-colors ${
+                    post.userVote === 1 
+                      ? 'bg-green-600 text-white' 
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <ArrowUpIcon className="h-6 w-6" />
+                </button>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{post.upvotes - post.downvotes}</span>
+                <button
                   className={`p-2 rounded-lg transition-colors ${
                     post.userVote === -1 
                       ? 'bg-red-600 text-white' 
