@@ -1,5 +1,7 @@
 import express from 'express';
+import { Op } from 'sequelize';
 import Freelancer from '../models/Freelancer.js';
+import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,32 +11,37 @@ router.get('/', async (req, res) => {
   try {
     const { search, category, availability, page = 1, limit = 20 } = req.query;
     
-    let query = {};
+    let where = {};
     
     if (category) {
-      query.category = category;
+      where.category = category;
     }
     
     if (availability) {
-      query.availability = availability;
+      where.availability = availability;
     }
     
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { skills: { $in: [new RegExp(search, 'i')] } }
+      where[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } },
+        { skills: { [Op.overlap]: [search] } }
       ];
     }
     
-    const freelancers = await Freelancer.find(query)
-      .populate('user', 'username email location isVerified')
-      .sort({ rating: -1, completedProjects: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
+    const freelancers = await Freelancer.findAll({
+      where,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['username', 'email', 'location', 'isVerified']
+      }],
+      order: [['rating', 'DESC'], ['completedProjects', 'DESC']],
+      limit: limit * 1,
+      offset: (page - 1) * limit
+    });
     
-    const count = await Freelancer.countDocuments(query);
+    const count = await Freelancer.count({ where });
     
     res.json({
       freelancers,
@@ -51,9 +58,21 @@ router.get('/', async (req, res) => {
 // Get single freelancer
 router.get('/:id', async (req, res) => {
   try {
-    const freelancer = await Freelancer.findById(req.params.id)
-      .populate('user', 'username email location isVerified reputation')
-      .populate('reviews.reviewer', 'username');
+    const freelancer = await Freelancer.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['username', 'email', 'location', 'isVerified', 'reputation']
+        },
+        {
+          model: User,
+          as: 'reviewer',
+          through: { attributes: [] },
+          attributes: ['username']
+        }
+      ]
+    });
     
     if (!freelancer) {
       return res.status(404).json({ error: 'Freelancer not found' });
@@ -71,7 +90,7 @@ router.post('/', authenticate, async (req, res) => {
   try {
     const { title, category, description, skills, hourlyRate, availability, portfolio } = req.body;
     
-    let freelancer = await Freelancer.findOne({ user: req.user._id });
+    let freelancer = await Freelancer.findOne({ where: { userId: req.user.id } });
     
     if (freelancer) {
       // Update existing
@@ -82,11 +101,12 @@ router.post('/', authenticate, async (req, res) => {
       freelancer.hourlyRate = hourlyRate || freelancer.hourlyRate;
       freelancer.availability = availability || freelancer.availability;
       freelancer.portfolio = portfolio || freelancer.portfolio;
-      freelancer.updatedAt = Date.now();
+      freelancer.updatedAt = new Date();
+      await freelancer.save();
     } else {
       // Create new
-      freelancer = new Freelancer({
-        user: req.user._id,
+      freelancer = await Freelancer.create({
+        userId: req.user.id,
         title,
         category,
         description,
@@ -97,8 +117,13 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
     
-    await freelancer.save();
-    await freelancer.populate('user', 'username email location isVerified');
+    await freelancer.reload({
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['username', 'email', 'location', 'isVerified']
+      }]
+    });
     
     res.json({ freelancer });
   } catch (error) {
@@ -110,7 +135,7 @@ router.post('/', authenticate, async (req, res) => {
 // Add review
 router.post('/:id/reviews', authenticate, async (req, res) => {
   try {
-    const freelancer = await Freelancer.findById(req.params.id);
+    const freelancer = await Freelancer.findByPk(req.params.id);
     
     if (!freelancer) {
       return res.status(404).json({ error: 'Freelancer not found' });
@@ -120,7 +145,7 @@ router.post('/:id/reviews', authenticate, async (req, res) => {
     
     // Check if user already reviewed
     const existingReview = freelancer.reviews.find(
-      r => r.reviewer.toString() === req.user._id.toString()
+      r => r.reviewer === req.user.id
     );
     
     if (existingReview) {
@@ -128,7 +153,7 @@ router.post('/:id/reviews', authenticate, async (req, res) => {
     }
     
     freelancer.reviews.push({
-      reviewer: req.user._id,
+      reviewer: req.user.id,
       rating,
       comment
     });

@@ -7,7 +7,10 @@ const router = express.Router();
 // Get user profile
 router.get('/:username', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username }).select('-password');
+    const user = await User.findOne({ 
+      where: { username: req.params.username },
+      attributes: { exclude: ['password'] }
+    });
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -25,13 +28,13 @@ router.put('/profile', authenticate, async (req, res) => {
   try {
     const { bio, location, expertise, avatar } = req.body;
     
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
     
     user.bio = bio !== undefined ? bio : user.bio;
     user.location = location !== undefined ? location : user.location;
     user.expertise = expertise !== undefined ? expertise : user.expertise;
     user.avatar = avatar !== undefined ? avatar : user.avatar;
-    user.updatedAt = Date.now();
+    user.updatedAt = new Date();
     
     await user.save();
     

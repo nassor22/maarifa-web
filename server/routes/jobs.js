@@ -1,5 +1,7 @@
 import express from 'express';
+import { Op } from 'sequelize';
 import Job from '../models/Job.js';
+import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,28 +11,33 @@ router.get('/', async (req, res) => {
   try {
     const { category, type, location, page = 1, limit = 20 } = req.query;
     
-    let query = { isActive: true };
+    let where = { isActive: true };
     
     if (category) {
-      query.category = category;
+      where.category = category;
     }
     
     if (type) {
-      query.type = type;
+      where.type = type;
     }
     
     if (location) {
-      query.location = { $regex: location, $options: 'i' };
+      where.location = { [Op.iLike]: `%${location}%` };
     }
     
-    const jobs = await Job.find(query)
-      .populate('postedBy', 'username email')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
+    const jobs = await Job.findAll({
+      where,
+      include: [{
+        model: User,
+        as: 'postedBy',
+        attributes: ['username', 'email']
+      }],
+      order: [['createdAt', 'DESC']],
+      limit: limit * 1,
+      offset: (page - 1) * limit
+    });
     
-    const count = await Job.countDocuments(query);
+    const count = await Job.count({ where });
     
     res.json({
       jobs,
@@ -47,8 +54,13 @@ router.get('/', async (req, res) => {
 // Get single job
 router.get('/:id', async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id)
-      .populate('postedBy', 'username email');
+    const job = await Job.findByPk(req.params.id, {
+      include: [{
+        model: User,
+        as: 'postedBy',
+        attributes: ['username', 'email']
+      }]
+    });
     
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
@@ -66,7 +78,7 @@ router.post('/', authenticate, async (req, res) => {
   try {
     const { title, company, location, type, category, description, requirements, salary, expiresAt } = req.body;
     
-    const job = new Job({
+    const job = await Job.create({
       title,
       company,
       location,
@@ -75,12 +87,17 @@ router.post('/', authenticate, async (req, res) => {
       description,
       requirements: requirements || [],
       salary,
-      postedBy: req.user._id,
+      postedById: req.user.id,
       expiresAt
     });
     
-    await job.save();
-    await job.populate('postedBy', 'username email');
+    await job.reload({
+      include: [{
+        model: User,
+        as: 'postedBy',
+        attributes: ['username', 'email']
+      }]
+    });
     
     res.status(201).json({ job });
   } catch (error) {
@@ -92,7 +109,7 @@ router.post('/', authenticate, async (req, res) => {
 // Apply for job
 router.post('/:id/apply', authenticate, async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findByPk(req.params.id);
     
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
@@ -100,7 +117,7 @@ router.post('/:id/apply', authenticate, async (req, res) => {
     
     // Check if already applied
     const existingApplication = job.applications.find(
-      app => app.applicant.toString() === req.user._id.toString()
+      app => app.applicant === req.user.id
     );
     
     if (existingApplication) {
@@ -110,7 +127,7 @@ router.post('/:id/apply', authenticate, async (req, res) => {
     const { coverLetter, resume } = req.body;
     
     job.applications.push({
-      applicant: req.user._id,
+      applicant: req.user.id,
       coverLetter,
       resume
     });

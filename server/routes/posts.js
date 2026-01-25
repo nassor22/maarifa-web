@@ -1,5 +1,7 @@
 import express from 'express';
+import { Op } from 'sequelize';
 import Post from '../models/Post.js';
+import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,28 +11,36 @@ router.get('/', async (req, res) => {
   try {
     const { category, type, search, page = 1, limit = 20 } = req.query;
     
-    let query = {};
+    let where = {};
     
     if (category) {
-      query.category = category;
+      where.category = category;
     }
     
     if (type) {
-      query.type = type;
+      where.type = type;
     }
     
     if (search) {
-      query.$text = { $search: search };
+      where[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } },
+        { content: { [Op.iLike]: `%${search}%` } }
+      ];
     }
     
-    const posts = await Post.find(query)
-      .populate('author', 'username email isVerified reputation')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
+    const posts = await Post.findAll({
+      where,
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['username', 'email', 'isVerified', 'reputation']
+      }],
+      order: [['createdAt', 'DESC']],
+      limit: limit * 1,
+      offset: (page - 1) * limit
+    });
     
-    const count = await Post.countDocuments(query);
+    const count = await Post.count({ where });
     
     res.json({
       posts,
@@ -47,9 +57,21 @@ router.get('/', async (req, res) => {
 // Get single post
 router.get('/:id', async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id)
-      .populate('author', 'username email isVerified reputation')
-      .populate('replies.author', 'username email isVerified reputation');
+    const post = await Post.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'author',
+          attributes: ['username', 'email', 'isVerified', 'reputation']
+        },
+        {
+          model: User,
+          as: 'replyAuthor',
+          through: { attributes: [] },
+          attributes: ['username', 'email', 'isVerified', 'reputation']
+        }
+      ]
+    });
     
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
@@ -71,17 +93,22 @@ router.post('/', authenticate, async (req, res) => {
   try {
     const { type, title, content, category, tags } = req.body;
     
-    const post = new Post({
+    const post = await Post.create({
       type,
       title,
       content,
       category,
       tags: tags || [],
-      author: req.user._id
+      authorId: req.user.id
     });
     
-    await post.save();
-    await post.populate('author', 'username email isVerified reputation');
+    await post.reload({
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['username', 'email', 'isVerified', 'reputation']
+      }]
+    });
     
     res.status(201).json({ post });
   } catch (error) {
@@ -93,14 +120,14 @@ router.post('/', authenticate, async (req, res) => {
 // Update post
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findByPk(req.params.id);
     
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
     
     // Check if user is the author
-    if (post.author.toString() !== req.user._id.toString()) {
+    if (post.authorId !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized' });
     }
     
@@ -110,7 +137,7 @@ router.put('/:id', authenticate, async (req, res) => {
     post.content = content || post.content;
     post.category = category || post.category;
     post.tags = tags || post.tags;
-    post.updatedAt = Date.now();
+    post.updatedAt = new Date();
     
     await post.save();
     
@@ -124,18 +151,18 @@ router.put('/:id', authenticate, async (req, res) => {
 // Delete post
 router.delete('/:id', authenticate, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findByPk(req.params.id);
     
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
     
     // Check if user is the author
-    if (post.author.toString() !== req.user._id.toString()) {
+    if (post.authorId !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized' });
     }
     
-    await post.deleteOne();
+    await post.destroy();
     
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {
@@ -147,20 +174,20 @@ router.delete('/:id', authenticate, async (req, res) => {
 // Upvote post
 router.post('/:id/upvote', authenticate, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findByPk(req.params.id);
     
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
     
-    const userId = req.user._id;
+    const userId = req.user.id;
     
     // Remove from downvotes if exists
-    post.downvotedBy = post.downvotedBy.filter(id => id.toString() !== userId.toString());
+    post.downvotedBy = post.downvotedBy.filter(id => id !== userId);
     
     // Toggle upvote
     if (post.upvotedBy.includes(userId)) {
-      post.upvotedBy = post.upvotedBy.filter(id => id.toString() !== userId.toString());
+      post.upvotedBy = post.upvotedBy.filter(id => id !== userId);
     } else {
       post.upvotedBy.push(userId);
     }
@@ -180,7 +207,7 @@ router.post('/:id/upvote', authenticate, async (req, res) => {
 // Add reply
 router.post('/:id/replies', authenticate, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findByPk(req.params.id);
     
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
@@ -189,12 +216,19 @@ router.post('/:id/replies', authenticate, async (req, res) => {
     const { content } = req.body;
     
     post.replies.push({
-      author: req.user._id,
+      author: req.user.id,
       content
     });
     
     await post.save();
-    await post.populate('replies.author', 'username email isVerified reputation');
+    await post.reload({
+      include: [{
+        model: User,
+        as: 'replyAuthor',
+        through: { attributes: [] },
+        attributes: ['username', 'email', 'isVerified', 'reputation']
+      }]
+    });
     
     res.status(201).json({ replies: post.replies });
   } catch (error) {

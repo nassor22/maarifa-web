@@ -1,6 +1,8 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { Op } from 'sequelize';
 import User from '../models/User.js';
 import LoginAttempt from '../models/LoginAttempt.js';
 import Session from '../models/Session.js';
@@ -24,10 +26,12 @@ const getUserAgent = (req) => {
 
 // Helper function to check rate limiting
 const checkRateLimit = async (email, maxAttempts = 5, timeWindowMs = 15 * 60 * 1000) => {
-  const recentAttempts = await LoginAttempt.countDocuments({
-    email: email.toLowerCase(),
-    success: false,
-    timestamp: { $gt: new Date(Date.now() - timeWindowMs) }
+  const recentAttempts = await LoginAttempt.count({
+    where: {
+      email: email.toLowerCase(),
+      success: false,
+      timestamp: { [Op.gt]: new Date(Date.now() - timeWindowMs) }
+    }
   });
   
   return recentAttempts >= maxAttempts;
@@ -94,10 +98,12 @@ router.post('/register',
 
       // Check if user already exists
       let user = await User.findOne({ 
-        $or: [
-          { email: email.toLowerCase() },
-          { username: username.toLowerCase() }
-        ]
+        where: {
+          [Op.or]: [
+            { email: email.toLowerCase() },
+            { username: username.toLowerCase() }
+          ]
+        }
       });
       
       if (user) {
@@ -106,36 +112,39 @@ router.post('/register',
       }
 
       // Check for spam registrations from same IP
-      const recentRegistrations = await User.countDocuments({
-        createdAt: { $gt: new Date(Date.now() - 60 * 60 * 1000) }
+      const recentRegistrations = await User.count({
+        where: {
+          createdAt: { [Op.gt]: new Date(Date.now() - 60 * 60 * 1000) }
+        }
       });
       
       if (recentRegistrations > 100) {
         return res.status(429).json({ error: 'Too many registrations. Please try again later.' });
       }
 
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       // Create new user
-      user = new User({
+      user = await User.create({
         username: username.toLowerCase(),
         email: email.toLowerCase(),
-        password,
+        password: hashedPassword,
         countryCode: countryCode || '+254',
         phone: phone || null,
         role: role || 'community_member'
       });
 
-      await user.save();
-
       // Create JWT token
       const token = jwt.sign(
-        { userId: user._id },
+        { userId: user.id },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE || '7d' }
       );
 
       // Create session record
       await Session.create({
-        userId: user._id,
+        userId: user.id,
         token,
         ipAddress: getClientIp(req),
         userAgent: getUserAgent(req),
@@ -147,7 +156,7 @@ router.post('/register',
         message: 'Registration successful',
         token,
         user: {
-          id: user._id,
+          id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
@@ -198,10 +207,12 @@ router.post('/login',
 
       // Find user by email or username
       const user = await User.findOne({
-        $or: [
-          { email: emailLower },
-          { username: usernameOrEmail }
-        ]
+        where: {
+          [Op.or]: [
+            { email: emailLower },
+            { username: usernameOrEmail }
+          ]
+        }
       });
 
       if (!user) {
@@ -222,14 +233,14 @@ router.post('/login',
 
       // Create JWT token
       const token = jwt.sign(
-        { userId: user._id },
+        { userId: user.id },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE || '7d' }
       );
 
       // Create session record
       await Session.create({
-        userId: user._id,
+        userId: user.id,
         token,
         ipAddress,
         userAgent,
@@ -244,7 +255,7 @@ router.post('/login',
         message: 'Login successful',
         token,
         user: {
-          id: user._id,
+          id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
@@ -264,7 +275,7 @@ router.get('/me', authenticate, async (req, res) => {
   try {
     res.json({
       user: {
-        id: req.user._id,
+        id: req.user.id,
         username: req.user.username,
         email: req.user.email,
         role: req.user.role,
