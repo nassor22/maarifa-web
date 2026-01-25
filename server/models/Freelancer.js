@@ -1,91 +1,74 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-const freelancerSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true
+class Freelancer extends Model {}
+
+Freelancer.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    unique: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   title: {
-    type: String,
-    required: true,
-    trim: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   category: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
   description: {
-    type: String,
-    required: true,
-    maxlength: 500
+    type: DataTypes.TEXT,
+    allowNull: false
   },
-  skills: [{
-    type: String
-  }],
+  skills: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
+  },
   hourlyRate: {
-    min: {
-      type: Number,
-      required: true
-    },
-    max: {
-      type: Number,
-      required: true
-    },
-    currency: {
-      type: String,
-      default: 'USD'
+    type: DataTypes.JSONB,
+    defaultValue: {
+      currency: 'USD'
     }
   },
   availability: {
-    type: String,
-    enum: ['Available', 'Busy', 'Not Available'],
-    default: 'Available'
+    type: DataTypes.ENUM('Available', 'Busy', 'Not Available'),
+    defaultValue: 'Available'
   },
   rating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
-  },
-  reviews: [{
-    reviewer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
+    type: DataTypes.DECIMAL(2, 1),
+    defaultValue: 0,
+    validate: {
+      min: 0,
       max: 5
-    },
-    comment: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
     }
-  }],
+  },
+  reviews: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
   completedProjects: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
-  portfolio: [{
-    title: String,
-    description: String,
-    url: String,
-    image: String
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  portfolio: {
+    type: DataTypes.JSONB,
+    defaultValue: []
   }
+}, {
+  sequelize,
+  modelName: 'Freelancer',
+  tableName: 'freelancers',
+  timestamps: true
 });
-
-const Freelancer = mongoose.model('Freelancer', freelancerSchema);
 
 export default Freelancer;

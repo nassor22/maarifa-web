@@ -1,87 +1,73 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-const jobSchema = new mongoose.Schema({
+class Job extends Model {}
+
+Job.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   title: {
-    type: String,
-    required: true,
-    trim: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   company: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   location: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   type: {
-    type: String,
-    enum: ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'],
-    required: true
+    type: DataTypes.ENUM('Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'),
+    allowNull: false
   },
   category: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
   description: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
-  requirements: [{
-    type: String
-  }],
+  requirements: {
+    type: DataTypes.ARRAY(DataTypes.TEXT),
+    defaultValue: []
+  },
   salary: {
-    min: Number,
-    max: Number,
-    currency: {
-      type: String,
-      default: 'USD'
-    },
-    period: {
-      type: String,
-      enum: ['hour', 'month', 'year'],
-      default: 'month'
+    type: DataTypes.JSONB,
+    defaultValue: {
+      currency: 'USD',
+      period: 'month'
     }
   },
-  postedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  applications: [{
-    applicant: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    coverLetter: String,
-    resume: String,
-    status: {
-      type: String,
-      enum: ['pending', 'reviewed', 'accepted', 'rejected'],
-      default: 'pending'
-    },
-    appliedAt: {
-      type: Date,
-      default: Date.now
+  postedById: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
     }
-  }],
+  },
+  applications: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
   isActive: {
-    type: Boolean,
-    default: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   },
   expiresAt: {
-    type: Date
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.DATE
   }
+}, {
+  sequelize,
+  modelName: 'Job',
+  tableName: 'jobs',
+  timestamps: true
 });
-
-const Job = mongoose.model('Job', jobSchema);
 
 export default Job;

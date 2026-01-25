@@ -1,39 +1,52 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-const sessionSchema = new mongoose.Schema({
+class Session extends Model {}
+
+Session.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   token: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   ipAddress: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(45),
+    allowNull: false
   },
   userAgent: {
-    type: String
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.TEXT
   },
   expiresAt: {
-    type: Date,
-    required: true
+    type: DataTypes.DATE,
+    allowNull: false
   },
   isActive: {
-    type: Boolean,
-    default: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
+}, {
+  sequelize,
+  modelName: 'Session',
+  tableName: 'sessions',
+  timestamps: true,
+  updatedAt: false,
+  indexes: [
+    {
+      fields: ['expiresAt']
+    }
+  ]
 });
-
-// Index for cleanup of expired sessions
-sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
-const Session = mongoose.model('Session', sessionSchema);
 
 export default Session;

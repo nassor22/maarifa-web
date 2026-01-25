@@ -1,89 +1,82 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-const postSchema = new mongoose.Schema({
+class Post extends Model {}
+
+Post.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   type: {
-    type: String,
-    enum: ['question', 'information', 'opinion', 'knowledge'],
-    required: true
+    type: DataTypes.ENUM('question', 'information', 'opinion', 'knowledge'),
+    allowNull: false
   },
   title: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 200
+    type: DataTypes.STRING(200),
+    allowNull: false
   },
   content: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   category: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  authorId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   upvotes: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   downvotes: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
-  upvotedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  downvotedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  replies: [{
-    author: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    content: {
-      type: String,
-      required: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    upvotes: {
-      type: Number,
-      default: 0
-    }
-  }],
+  upvotedBy: {
+    type: DataTypes.ARRAY(DataTypes.UUID),
+    defaultValue: []
+  },
+  downvotedBy: {
+    type: DataTypes.ARRAY(DataTypes.UUID),
+    defaultValue: []
+  },
+  replies: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
   views: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
-  tags: [{
-    type: String
-  }],
+  tags: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
+  },
   isResolved: {
-    type: Boolean,
-    default: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
+}, {
+  sequelize,
+  modelName: 'Post',
+  tableName: 'posts',
+  timestamps: true,
+  indexes: [
+    {
+      type: 'FULLTEXT',
+      name: 'posts_search_idx',
+      fields: ['title', 'content']
+    }
+  ]
 });
-
-// Index for search
-postSchema.index({ title: 'text', content: 'text', tags: 'text' });
-
-const Post = mongoose.model('Post', postSchema);
 
 export default Post;

@@ -1,51 +1,69 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-const messageSchema = new mongoose.Schema({
-  conversation: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Conversation',
-    required: true
+class Message extends Model {}
+class Conversation extends Model {}
+
+Message.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  sender: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  conversationId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'conversations',
+      key: 'id'
+    }
+  },
+  senderId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   content: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
-  readBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
+  readBy: {
+    type: DataTypes.ARRAY(DataTypes.UUID),
+    defaultValue: []
   }
+}, {
+  sequelize,
+  modelName: 'Message',
+  tableName: 'messages',
+  timestamps: true,
+  updatedAt: false
 });
 
-const conversationSchema = new mongoose.Schema({
-  participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  }],
-  lastMessage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message'
+Conversation.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  participants: {
+    type: DataTypes.ARRAY(DataTypes.UUID),
+    allowNull: false
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  lastMessageId: {
+    type: DataTypes.UUID,
+    references: {
+      model: 'messages',
+      key: 'id'
+    }
   }
+}, {
+  sequelize,
+  modelName: 'Conversation',
+  tableName: 'conversations',
+  timestamps: true
 });
-
-const Message = mongoose.model('Message', messageSchema);
-const Conversation = mongoose.model('Conversation', conversationSchema);
 
 export { Message, Conversation };

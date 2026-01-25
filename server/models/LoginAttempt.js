@@ -1,39 +1,50 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
-const loginAttemptSchema = new mongoose.Schema({
+class LoginAttempt extends Model {}
+
+LoginAttempt.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   email: {
-    type: String,
-    required: true,
-    lowercase: true,
-    trim: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   ipAddress: {
-    type: String,
-    required: true
+    type: DataTypes.STRING(45),
+    allowNull: false
   },
   userAgent: {
-    type: String
+    type: DataTypes.TEXT
   },
   success: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   reason: {
-    type: String,
-    enum: ['invalid_credentials', 'invalid_email', 'account_locked', 'success', 'other'],
-    default: 'other'
+    type: DataTypes.ENUM('invalid_credentials', 'invalid_email', 'account_locked', 'success', 'other'),
+    defaultValue: 'other'
   },
   timestamp: {
-    type: Date,
-    default: Date.now,
-    expires: 2592000 // Auto-delete after 30 days
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   }
+}, {
+  sequelize,
+  modelName: 'LoginAttempt',
+  tableName: 'login_attempts',
+  timestamps: false,
+  indexes: [
+    {
+      fields: ['email', 'timestamp']
+    },
+    {
+      fields: ['ipAddress', 'timestamp']
+    }
+  ]
 });
-
-// Index for quick lookups
-loginAttemptSchema.index({ email: 1, timestamp: -1 });
-loginAttemptSchema.index({ ipAddress: 1, timestamp: -1 });
-
-const LoginAttempt = mongoose.model('LoginAttempt', loginAttemptSchema);
 
 export default LoginAttempt;

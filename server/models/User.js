@@ -1,85 +1,88 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
 import bcrypt from 'bcryptjs';
+import { sequelize } from '../config/database.js';
 
-const userSchema = new mongoose.Schema({
+class User extends Model {
+  // Method to compare password
+  async comparePassword(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+  }
+}
+
+User.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   username: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(255),
+    allowNull: false,
     unique: true,
-    trim: true,
-    minlength: 3
+    validate: {
+      len: [3, 255]
+    }
   },
   email: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(255),
+    allowNull: false,
     unique: true,
-    lowercase: true,
-    trim: true
+    validate: {
+      isEmail: true
+    }
   },
   password: {
-    type: String,
-    required: true,
-    minlength: 8
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      len: [8, 255]
+    }
   },
   countryCode: {
-    type: String,
-    default: '+254'
+    type: DataTypes.STRING(10),
+    defaultValue: '+254'
   },
   phone: {
-    type: String,
-    trim: true
+    type: DataTypes.STRING(20)
   },
   role: {
-    type: String,
-    enum: ['community_member', 'verified_expert_individual', 'verified_expert_org', 'admin'],
-    default: 'community_member'
+    type: DataTypes.ENUM('community_member', 'verified_expert_individual', 'verified_expert_org', 'admin'),
+    defaultValue: 'community_member'
   },
   isVerified: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   reputation: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   bio: {
-    type: String,
-    maxlength: 500
+    type: DataTypes.TEXT
   },
   avatar: {
-    type: String
+    type: DataTypes.STRING(500)
   },
-  expertise: [{
-    type: String
-  }],
+  expertise: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
+  },
   location: {
-    type: String
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.STRING(255)
+  }
+}, {
+  sequelize,
+  modelName: 'User',
+  tableName: 'users',
+  timestamps: true,
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
+      }
+    }
   }
 });
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-const User = mongoose.model('User', userSchema);
 
 export default User;
