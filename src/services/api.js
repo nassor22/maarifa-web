@@ -1,4 +1,11 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-c849.up.railway.app/api';
+// API URL from environment variable (set in Netlify/Vercel dashboard)
+// For local development, defaults to localhost:5000
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Log the API URL in development for debugging
+if (import.meta.env.DEV) {
+  console.log('🔗 API URL:', API_URL);
+}
 
 class ApiService {
   constructor() {
