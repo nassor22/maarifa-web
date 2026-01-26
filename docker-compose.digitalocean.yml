@@ -1,30 +1,28 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
-  mongodb:
-    image: mongo:7
-    container_name: maarifahub-mongodb
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: maarifahub-postgres
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-maarifahub}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-maarifahub}
     ports:
-      - "127.0.0.1:27017:27017"  # Only accessible from localhost
+      - "127.0.0.1:5432:5432"  # Only accessible from localhost
     volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
-      - mongodb_backup:/backup
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backup:/backup
     networks:
       - maarifahub-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    command: mongod --auth
 
   # Backend API
   backend:
@@ -38,12 +36,12 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=${PORT:-5000}
-      - MONGODB_URI=${MONGODB_URI}
+      - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRE=${JWT_EXPIRE:-7d}
       - CORS_ORIGIN=${CORS_ORIGIN}
     depends_on:
-      mongodb:
+      postgres:
         condition: service_healthy
     networks:
       - maarifahub-network
@@ -87,11 +85,9 @@ services:
       retries: 3
 
 volumes:
-  mongodb_data:
+  postgres_data:
     driver: local
-  mongodb_config:
-    driver: local
-  mongodb_backup:
+  postgres_backup:
     driver: local
   certbot_data:
     driver: local

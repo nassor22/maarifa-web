@@ -34,8 +34,8 @@ cd server
 if [ -d "node_modules" ]; then
     echo -e "${GREEN}✓ Dependencies installed${NC}"
     
-    # Check key dependencies
-    if npm list express mongoose jsonwebtoken bcryptjs cors dotenv express-validator &>/dev/null; then
+    # Check key dependencies (PostgreSQL + Sequelize)
+    if npm list express jsonwebtoken bcryptjs cors dotenv express-validator sequelize pg pg-hstore &>/dev/null; then
         echo -e "${GREEN}✓ All required packages present${NC}"
     else
         echo -e "${YELLOW}⚠ Some packages may be missing. Run: cd server && npm install${NC}"
@@ -49,11 +49,11 @@ echo "3. Checking configuration..."
 if [ -f ".env" ]; then
     echo -e "${GREEN}✓ Environment file exists${NC}"
     
-    # Check for critical variables
-    if grep -q "MONGODB_URI" .env && grep -q "JWT_SECRET" .env; then
+    # Check for critical variables (PostgreSQL)
+    if grep -q "^DATABASE_URL=" .env && grep -q "^JWT_SECRET=" .env; then
         echo -e "${GREEN}✓ Critical environment variables present${NC}"
     else
-        echo -e "${RED}✗ Missing critical environment variables${NC}"
+        echo -e "${RED}✗ Missing critical environment variables (expected DATABASE_URL and JWT_SECRET)${NC}"
     fi
     
     # Warn about default JWT secret
@@ -123,7 +123,7 @@ echo "  Development: cd server && npm run dev"
 echo "  Production:  cd server && npm run start:prod"
 echo ""
 echo "Prerequisites:"
-echo "  • MongoDB must be running"
+echo "  • PostgreSQL must be running and accessible"
 echo "  • .env file must be configured"
 echo "  • Dependencies installed (npm install)"
 echo ""

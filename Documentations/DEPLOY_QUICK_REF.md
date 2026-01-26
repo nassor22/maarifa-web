@@ -87,8 +87,10 @@ VITE_API_URL=https://maarifahub.social/api
 ### Backend (server/.env)
 ```env
 NODE_ENV=production
-MONGODB_URI=mongodb+srv://user:pass@host/maarifahub
+DATABASE_URL=postgresql://user:pass@host:5432/maarifahub
+DB_SSL=true
 JWT_SECRET=<generate-secure-key>
+JWT_EXPIRE=7d
 CORS_ORIGIN=https://maarifahub.social
 ```
 
@@ -136,10 +138,10 @@ curl http://localhost:5000/api/health
 
 ### Database Connection Issues
 ```bash
-# Verify MongoDB is running
-mongosh <your-connection-string>
+# Verify PostgreSQL is reachable
+psql "${DATABASE_URL}" -c "SELECT 1;" || echo "Cannot connect"
 
-# Check server logs for connection errors
+# If using managed DB, ensure DB_SSL=true in server/.env
 ```
 
 ### CORS Errors
@@ -167,7 +169,7 @@ Run automated check:
 Manual checklist:
 - [ ] Environment files configured (.env, server/.env)
 - [ ] JWT_SECRET changed from default
-- [ ] MongoDB connection configured
+- [ ] DATABASE_URL configured (and DB_SSL=true if required)
 - [ ] NODE_ENV=production set
 - [ ] CORS_ORIGIN set to your domain
 - [ ] Build completes without errors

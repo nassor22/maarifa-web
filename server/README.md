@@ -2,37 +2,42 @@
 
 ## Prerequisites
 
-1. **Node.js** (v16 or higher)
-2. **MongoDB** (v5 or higher)
+1. **Node.js** (v18 or higher)
+2. **PostgreSQL** (v14 or higher) or a managed Postgres service
 
-## MongoDB Installation
+## PostgreSQL Installation
 
 ### Ubuntu/Linux:
 ```bash
-# Import MongoDB GPG key
-wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+sudo apt update
+sudo apt install -y postgresql postgresql-contrib
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
 
-# Add MongoDB repository
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -sc)/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-
-# Update and install
-sudo apt-get update
-sudo apt-get install -y mongodb-org
-
-# Start MongoDB
-sudo systemctl start mongod
-sudo systemctl enable mongod
+# Create database and user
+sudo -u postgres psql -c "CREATE USER maarifa WITH PASSWORD 'changeme';"
+sudo -u postgres psql -c "CREATE DATABASE maarifahub OWNER maarifa;"
 ```
 
-### macOS:
+### macOS (Homebrew):
 ```bash
-brew tap mongodb/brew
-brew install mongodb-community
-brew services start mongodb-community
+brew install postgresql@16
+brew services start postgresql@16
+# Create DB and user
+createuser -s $(whoami) || true
+createdb maarifahub || true
 ```
 
-### Windows:
-Download and install from: https://www.mongodb.com/try/download/community
+### Connection String
+Local example:
+```
+DATABASE_URL=postgresql://maarifa:changeme@localhost:5432/maarifahub
+```
+Managed providers (Railway/Render/DO) often require SSL:
+```
+DATABASE_URL=postgresql://user:pass@host:5432/maarifahub
+DB_SSL=true
+```
 
 ## Setup Instructions
 
@@ -43,12 +48,15 @@ npm install
 ```
 
 ### 2. Configure Environment Variables
-The `.env` file is already created. Update if needed:
+Copy `server/.env.example` to `server/.env` and update:
 ```
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/maarifahub
-JWT_SECRET=your_jwt_secret_key_change_this_in_production
 NODE_ENV=development
+DATABASE_URL=postgresql://username:password@localhost:5432/maarifahub
+DB_SSL=false
+JWT_SECRET=<generate-secure-key>
+JWT_EXPIRE=7d
+CORS_ORIGIN=*
 ```
 
 ### 3. Start the Server
@@ -146,20 +154,20 @@ The frontend will run on http://localhost:5173 and connect to the backend API.
 
 ## Database Structure
 
-The following collections will be created automatically:
-- `users` - User accounts
-- `posts` - Community posts and questions
-- `freelancers` - Freelancer profiles
-- `jobs` - Job listings
-- `messages` - Chat messages
-- `conversations` - Chat conversations
+Key tables managed via Sequelize:
+- `users`, `posts`, `freelancers`, `jobs`, `messages`, `sessions`, etc.
+Relations and indexes are created by Sequelize sync in development.
 
 ## Troubleshooting
 
-### MongoDB Connection Issues
-1. Ensure MongoDB is running: `sudo systemctl status mongod`
-2. Check MongoDB logs: `sudo tail -f /var/log/mongodb/mongod.log`
-3. Verify connection string in `.env`
+### PostgreSQL Connection Issues
+1. Ensure PostgreSQL is running: `sudo systemctl status postgresql`
+2. Check service logs: `journalctl -u postgresql --since "1 hour ago"`
+3. Test connection with psql:
+  ```bash
+  psql "postgresql://username:password@localhost:5432/maarifahub" -c "\dt"
+  ```
+4. If using a managed DB, set `DB_SSL=true` in `.env`.
 
 ### Port Already in Use
 If port 5000 is taken, change the PORT in `.env` file

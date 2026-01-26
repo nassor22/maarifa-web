@@ -14,6 +14,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Connect to PostgreSQL
@@ -129,10 +130,10 @@ process.on('SIGINT', () => {
   });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Server is running on http://${HOST}:${PORT}`);
   console.log(`Environment: ${NODE_ENV}`);
-  console.log(`API: http://localhost:${PORT}/api`);
+  console.log(`API: http://${HOST}:${PORT}/api`);
 });
 
 export default app;

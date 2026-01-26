@@ -1,4 +1,10 @@
+import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
+
+// Load environment variables before initializing Sequelize
+dotenv.config();
+
+const useSsl = process.env.DB_SSL === 'true' || (process.env.NODE_ENV === 'production' && process.env.DB_SSL !== 'false');
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
@@ -10,7 +16,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     idle: 10000
   },
   dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? {
+    ssl: useSsl ? {
       require: true,
       rejectUnauthorized: false
     } : false

@@ -78,14 +78,31 @@ if [ -f "server/.env" ]; then
         check_pass "JWT_SECRET is configured"
     fi
     
-    if grep -q "NODE_ENV=production" server/.env; then
+    if grep -q "^NODE_ENV=production" server/.env; then
         check_pass "NODE_ENV set to production"
     else
         check_warn "NODE_ENV not set to production"
     fi
     
-    if grep -q "mongodb://localhost" server/.env; then
-        check_warn "MongoDB URI points to localhost. Update for production if needed."
+    # PostgreSQL checks
+    if grep -q "^DATABASE_URL=" server/.env; then
+        DB_URL=$(grep '^DATABASE_URL=' server/.env | sed 's/^DATABASE_URL=//')
+        if [[ "$DB_URL" == *"username:password"* ]]; then
+            check_warn "DATABASE_URL uses placeholder credentials – update for your environment."
+        else
+            check_pass "DATABASE_URL is configured"
+        fi
+    else
+        check_fail "DATABASE_URL is missing in server/.env"
+    fi
+
+    # SSL guidance in production
+    if grep -q "^NODE_ENV=production" server/.env; then
+        if grep -q "^DB_SSL=true" server/.env; then
+            check_pass "DB_SSL enabled for production"
+        else
+            check_warn "DB_SSL not enabled in production (set DB_SSL=true if your provider requires SSL)"
+        fi
     fi
 else
     check_fail "Backend .env file missing. Copy from server/.env.example"
